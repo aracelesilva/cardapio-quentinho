@@ -32,6 +32,22 @@
   .links a small{display:block;font-weight:400;font-size:13px}
   .links a:active,.links a:hover{background:var(--amb)}
   .video{font-size:13px;font-weight:700;color:var(--amb2)}
+  .busca{width:100%;margin:16px 0 8px;padding:12px 14px;border:2px solid var(--preto);border-radius:12px;font:600 15px Inter,system-ui,sans-serif;background:var(--branco)}
+  .busca:focus{outline:3px solid var(--amb)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:4px 0 6px}
+  .chip{border:2px solid var(--preto);background:var(--branco);border-radius:99px;padding:6px 12px;font:700 13px Inter,system-ui,sans-serif;cursor:pointer;color:var(--preto)}
+  .chip.on{background:var(--amb)}
+  details.prato{padding:0}
+  details.prato summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;gap:10px;align-items:center}
+  details.prato summary::-webkit-details-marker{display:none}
+  details.prato summary .num{flex:0 0 auto;background:var(--preto);color:var(--branco);font-weight:900;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  details.prato summary .tit{flex:1;font-weight:800;font-size:16px;line-height:1.3}
+  details.prato summary .tit small{display:block;font-weight:600;font-size:12px;color:var(--amb2)}
+  details.prato summary .seta{font-size:18px;transition:transform .2s}
+  details.prato[open] summary .seta{transform:rotate(90deg)}
+  details.prato[open] summary .num{background:var(--amb);color:var(--preto)}
+  .corpo{padding:0 18px 14px}
+  .vazio{text-align:center;font-weight:700;margin:24px 0;display:none}
   footer{text-align:center;font-size:13px;margin-top:30px}
   footer b{color:var(--amb2)}
 </style>
@@ -43,10 +59,13 @@
     <h1>Cardápio do <span>Quentinho</span> ☕</h1>
     <p class="sub">Todos os links dos meus vídeos, num lugar só.</p>
     <a class="handle" href="https://www.instagram.com/souaracele.ia/">@souaracele.ia · IA Simplificada</a>
-    <div class="dica">🍽️ O prato <b>mais novo fica no topo</b>. Procure pelo título do vídeo que você viu.</div>
+    <div class="dica">🍽️ O prato <b>mais novo fica no topo</b> e já vem aberto. Toque no título dos outros para ver os links.</div>
+    <input class="busca" id="busca" type="search" placeholder="🔎 Procurar (ex.: Gemini, Canva, prato 3)" aria-label="Procurar prato">
+    <div class="chips" id="chips"></div>
   </header>
 
   <main id="pratos"></main>
+  <p class="vazio" id="vazio">Nenhum prato com essa busca 😕 Tente outra palavra.</p>
 
   <footer>Gostou do prato? Me segue em <b>@souaracele.ia</b> que amanhã tem mais 🧡</footer>
 </div>
@@ -56,6 +75,7 @@
 const PRATOS = [
   {
     data: "13/11/2026",
+    tipo: "novidade",
     titulo: "O Google lançou o Gemini 4 Hydrogen",
     resumo: "O novo modelo rápido do Google pro dia a dia, no app Gemini (no plano grátis o app escolhe ele sozinho; a liberação é aos poucos). Bom pra e-mail, resumo de documentos, guias de estudo e pesquisa.",
     video: "https://www.instagram.com/reel/DfrZvMmP9c6/",
@@ -67,6 +87,7 @@ const PRATOS = [
 ,
   {
     data: "12/11/2026",
+    tipo: "github",
     titulo: "Saindo quentinho do GitHub: 5 ferramentas grátis",
     resumo: "Cinco projetos grátis e de código aberto que fazem o trabalho de app pago.",
     video: "https://www.instagram.com/reel/DfqCFEav_pu/",
@@ -80,6 +101,7 @@ const PRATOS = [
   },
   {
     data: "12/11/2026",
+    tipo: "novidade",
     titulo: "O Claude agora entra na sua reunião",
     resumo: "O Claude Meetings entra na chamada do Google Meet, acompanha a conversa, monta o plano e deixa anotações e tarefas prontas. Em teste (beta) nos planos Team e Enterprise. Junto vieram o Claude Sheets (planilhas) e o Claude Whiteboards (quadro para planejar em equipe), em beta nos planos pagos.",
     video: "https://www.instagram.com/reel/DfpAwScxLII/",
@@ -90,27 +112,88 @@ const PRATOS = [
   }
 ];
 
+const TIPOS = {
+  novidade: "🆕 Novidade de IA",
+  github: "🐙 Grátis do GitHub",
+  video: "🎬 Vídeo",
+  ferramenta: "🛠️ Ferramenta"
+};
 const el = document.getElementById("pratos");
+const total = PRATOS.length;
+let filtro = "";
+const tira = t => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
 PRATOS.forEach((p, i) => {
-  const art = document.createElement("article");
-  art.className = "prato";
-  art.innerHTML = `
-    <div class="topo">${i === 0 ? '<span class="tag novo">🔥 Mais novo</span>' : '<span class="tag">Prato</span>'}<span class="data">${p.data}</span></div>
-    <h2></h2><p></p><ul class="links"></ul>
-    ${p.video ? `<a class="video" href="${p.video}" target="_blank" rel="noopener">▶ Ver o vídeo</a>` : ""}`;
-  art.querySelector("h2").textContent = p.titulo;
-  art.querySelector("p").textContent = p.resumo;
-  const ul = art.querySelector("ul");
+  p.num = total - i;               // o primeiro vídeo é o prato nº 1
+  const d = document.createElement("details");
+  d.className = "prato";
+  d.id = "prato-" + p.num;
+  if (i === 0) d.open = true;
+  d.innerHTML = `<summary><span class="num"></span><span class="tit"></span><span class="seta">›</span></summary>
+    <div class="corpo"><div class="topo"></div><p></p><ul class="links"></ul></div>`;
+  d.querySelector(".num").textContent = p.num;
+  const tit = d.querySelector(".tit");
+  tit.textContent = p.titulo;
+  const sm = document.createElement("small");
+  sm.textContent = "Prato nº " + p.num + " · " + p.data + (TIPOS[p.tipo] ? " · " + TIPOS[p.tipo] : "");
+  tit.appendChild(sm);
+  if (i === 0) d.querySelector(".topo").innerHTML = '<span class="tag novo">🔥 Mais novo</span>';
+  d.querySelector("p").textContent = p.resumo;
+  const ul = d.querySelector("ul");
   p.links.forEach(([nome, url, extra]) => {
     const li = document.createElement("li");
     const a = document.createElement("a");
     a.href = url; a.target = "_blank"; a.rel = "noopener";
     a.textContent = nome;
-    const s = document.createElement("small"); s.textContent = extra || new URL(url).hostname.replace(/^www\./,"") + (url.includes("github.com") ? new URL(url).pathname : "");
+    const s = document.createElement("small");
+    s.textContent = extra || new URL(url).hostname.replace(/^www\./, "") + (url.includes("github.com") ? new URL(url).pathname : "");
     a.appendChild(s); li.appendChild(a); ul.appendChild(li);
   });
-  el.appendChild(art);
+  if (p.video) {
+    const v = document.createElement("a");
+    v.className = "video"; v.href = p.video; v.target = "_blank"; v.rel = "noopener";
+    v.textContent = "▶ Ver o vídeo";
+    d.querySelector(".corpo").appendChild(v);
+  }
+  p.texto = tira([p.titulo, p.resumo, "prato " + p.num, TIPOS[p.tipo] || "", ...p.links.map(l => l.join(" "))].join(" "));
+  p.el = d;
+  el.appendChild(d);
 });
+
+// etiquetas (só as que têm prato)
+const chips = document.getElementById("chips");
+const usados = Object.keys(TIPOS).filter(t => PRATOS.some(p => p.tipo === t));
+["", ...usados].forEach(t => {
+  const b = document.createElement("button");
+  b.className = "chip" + (t === "" ? " on" : "");
+  b.textContent = t === "" ? "Todos" : TIPOS[t];
+  b.onclick = () => {
+    filtro = t;
+    chips.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === b));
+    aplicar();
+  };
+  chips.appendChild(b);
+});
+
+const busca = document.getElementById("busca");
+function aplicar() {
+  const q = tira(busca.value.trim());
+  let n = 0;
+  PRATOS.forEach(p => {
+    const ok = (!filtro || p.tipo === filtro) && (!q || q.split(/\s+/).every(w => p.texto.includes(w)));
+    p.el.style.display = ok ? "" : "none";
+    if (ok) n++;
+    if (q && ok) p.el.open = true;
+  });
+  document.getElementById("vazio").style.display = n ? "none" : "block";
+}
+busca.addEventListener("input", aplicar);
+
+// link direto para um prato: ...#prato-3
+if (location.hash.startsWith("#prato-")) {
+  const alvo = document.querySelector(location.hash);
+  if (alvo) { alvo.open = true; alvo.scrollIntoView(); }
+}
 </script>
 </body>
 </html>
