@@ -26,6 +26,9 @@
   .data{font-size:12px;font-weight:600}
   .prato h2{font-size:20px;font-weight:900;margin:6px 0 6px;line-height:1.25}
   .prato p{margin:0 0 10px;font-size:15px}
+  .promptbox{background:var(--creme);border:2px solid var(--preto);border-radius:12px;padding:10px;margin:8px 0}
+  .promptbox pre{white-space:pre-wrap;font-family:inherit;font-size:14px;margin:0 0 8px;max-height:220px;overflow:auto}
+  .copiar{width:100%;background:var(--amb);color:var(--preto);border:2px solid var(--preto);border-radius:10px;padding:10px;font-weight:800;font-size:15px;cursor:pointer}
   .links{list-style:none;padding:0;margin:8px 0 6px}
   .links li{margin:8px 0}
   .links a{display:block;text-decoration:none;color:var(--preto);background:var(--creme);border:2px solid var(--preto);border-radius:12px;padding:10px 12px;font-weight:700;font-size:15px}
@@ -73,6 +76,18 @@
 <script>
 /* Cada vídeo novo entra no INÍCIO desta lista. */
 const PRATOS = [
+  {
+    data: "14/11/2026",
+    tipo: "prompt",
+    titulo: "Prompt caça-assinaturas: acha as cobranças esquecidas no extrato",
+    resumo: "Grátis no plano grátis do Gemini ou do ChatGPT. 1) Copie do app do banco o extrato dos últimos 3 meses (só data, descrição e valor — nunca CPF, conta ou senha). 2) Cole o prompt abaixo e, embaixo dele, o extrato. 3) Confira a tabela antes de cancelar qualquer coisa: a IA pode errar.",
+    video: "https://www.instagram.com/reel/DfvYMJFJ8PH/",
+    prompt: "Você é meu assistente de finanças pessoais. Abaixo vou colar linhas do meu extrato bancário dos últimos 3 meses (data, descrição e valor).\n1. Encontre todos os gastos que se repetem: assinaturas, mensalidades, aplicativos, planos e serviços, mesmo quando o nome aparece um pouco diferente de um mês para o outro.\n2. Monte uma tabela com: nome do serviço | valor por mês | quantas vezes apareceu | quanto dá por ano.\n3. Marque com ⚠️ o que parece esquecido, duplicado (dois serviços que fazem a mesma coisa) ou que subiu de preço, e explique em uma frase por quê.\n4. No final, me diga o total por mês e por ano dessas cobranças e quanto eu economizaria por ano cancelando os itens marcados.\n5. Me dê uma lista curta de próximos passos (o que cancelar primeiro, o que trocar por uma opção grátis).\nRegras: não invente nada; se não tiver certeza, escreva \"confirmar\". Responda em português simples, sem termos difíceis.\nMeu extrato:\n[cole aqui]",
+    links: [
+      ["Gemini (plano grátis)", "https://gemini.google.com"],
+      ["ChatGPT (plano grátis)", "https://chatgpt.com"]
+    ]
+  },
   {
     data: "13/11/2026",
     tipo: "github",
@@ -128,7 +143,8 @@ const TIPOS = {
   novidade: "🆕 Novidade de IA",
   github: "🐙 Grátis do GitHub",
   video: "🎬 Vídeo",
-  ferramenta: "🛠️ Ferramenta"
+  ferramenta: "🛠️ Ferramenta",
+  prompt: "📋 Prompt pronto"
 };
 const el = document.getElementById("pratos");
 const total = PRATOS.length;
@@ -161,13 +177,21 @@ PRATOS.forEach((p, i) => {
     s.textContent = extra || new URL(url).hostname.replace(/^www\./, "") + (url.includes("github.com") ? new URL(url).pathname : "");
     a.appendChild(s); li.appendChild(a); ul.appendChild(li);
   });
+  if (p.prompt) {
+    const box = document.createElement("div"); box.className = "promptbox";
+    const pre = document.createElement("pre"); pre.textContent = p.prompt;
+    const b = document.createElement("button"); b.type = "button"; b.className = "copiar"; b.textContent = "📋 Copiar o prompt";
+    b.onclick = () => { navigator.clipboard.writeText(p.prompt).then(() => { b.textContent = "✅ Copiado!"; setTimeout(() => b.textContent = "📋 Copiar o prompt", 2000); }); };
+    box.appendChild(pre); box.appendChild(b);
+    d.querySelector(".corpo").insertBefore(box, ul);
+  }
   if (p.video) {
     const v = document.createElement("a");
     v.className = "video"; v.href = p.video; v.target = "_blank"; v.rel = "noopener";
     v.textContent = "▶ Ver o vídeo";
     d.querySelector(".corpo").appendChild(v);
   }
-  p.texto = tira([p.titulo, p.resumo, "prato " + p.num, TIPOS[p.tipo] || "", ...p.links.map(l => l.join(" "))].join(" "));
+  p.texto = tira([p.titulo, p.resumo, p.prompt || "", "prato " + p.num, TIPOS[p.tipo] || "", ...p.links.map(l => l.join(" "))].join(" "));
   p.el = d;
   el.appendChild(d);
 });
