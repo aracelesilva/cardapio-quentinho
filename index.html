@@ -77,6 +77,44 @@
 /* Cada vídeo novo entra no INÍCIO desta lista. */
 const PRATOS = [
   {
+    "data": "16/11/2026",
+    "tipo": "ferramenta",
+    "titulo": "Gemini grátis: 3 coisas que dá pra fazer de graça",
+    "resumo": "Tem grátis com limite: é só ter uma conta Google, no celular ou no computador. 1) Resumir e-mail e documento e montar guia de estudo. 2) Pesquisa Profunda: ele lê vários sites e entrega um relatório com os links. 3) Criar e editar imagem (Nano Banana 2). Criar vídeo é só nos planos pagos. Limite: o Google não divulga um número fixo; renova a cada 5 horas, até um limite por semana, e pode diminuir quando tem muita gente usando. Planos pagos (site do Google Brasil, 16/11/2026): AI Plus R$ 24,99/mês e AI Pro R$ 96,99/mês. Cuidado: não mande documento com CPF, conta ou senha, e confira o que a IA disser. Os comandos dos 3 exemplos estão abaixo, prontos pra copiar.",
+    "prompts": [
+      [
+        "1. Resumo de e-mail ou documento (toque no + e mande o arquivo ou cole o texto)",
+        "Resume esse material em português simples, em no máximo 5 tópicos curtos. Depois me diga: 1) o que eu preciso fazer, 2) até quando, 3) o que ainda ficou em dúvida. Se for um e-mail, escreva também um rascunho de resposta educado e curto."
+      ],
+      [
+        "1b. Guia de estudo (com o mesmo arquivo)",
+        "Monte um guia de estudo desse material para quem está começando: explique as ideias principais em linguagem simples, dê 1 exemplo do dia a dia para cada uma e, no final, faça 5 perguntas com as respostas para eu me testar."
+      ],
+      [
+        "2. Pesquisa Profunda (toque em Ferramentas → Deep Research e troque o que está entre colchetes)",
+        "Quero comprar [um celular] de até [R$ 1.500]. Pesquise os modelos mais recomendados à venda no Brasil agora e compare em uma tabela: preço médio, câmera, bateria, armazenamento e pontos negativos. No final, indique o melhor custo-benefício para [quem usa muito WhatsApp e fotos] e explique o porquê em 3 frases. Use fontes brasileiras e mostre os links."
+      ],
+      [
+        "3. Editar imagem (toque no + e mande a foto)",
+        "Edite esta foto: deixe o fundo laranja e iluminado, com luz suave de estúdio, como foto de produto. Mantenha o objeto exatamente igual, sem mudar formato, cor ou detalhes. Formato vertical."
+      ]
+    ],
+    "links": [
+      [
+        "App Gemini (grátis com conta Google)",
+        "https://gemini.google.com"
+      ],
+      [
+        "Planos em reais (site oficial)",
+        "https://gemini.google/br/subscriptions/"
+      ],
+      [
+        "Limites do Gemini (ajuda do Google)",
+        "https://support.google.com/gemini/answer/16275805"
+      ]
+    ]
+  },
+  {
     data: "15/11/2026",
     tipo: "github",
     titulo: "Orcanva: capa de YouTube, post e story grátis no navegador",
@@ -197,13 +235,22 @@ PRATOS.forEach((p, i) => {
     box.appendChild(pre); box.appendChild(b);
     d.querySelector(".corpo").insertBefore(box, ul);
   }
+  (p.prompts || []).forEach(([rot, txt]) => {
+    const box = document.createElement("div"); box.className = "promptbox";
+    const h = document.createElement("b"); h.textContent = rot; h.style.display = "block"; h.style.marginBottom = "6px";
+    const pre = document.createElement("pre"); pre.textContent = txt;
+    const b = document.createElement("button"); b.type = "button"; b.className = "copiar"; b.textContent = "📋 Copiar o comando";
+    b.onclick = () => { navigator.clipboard.writeText(txt).then(() => { b.textContent = "✅ Copiado!"; setTimeout(() => b.textContent = "📋 Copiar o comando", 2000); }); };
+    box.appendChild(h); box.appendChild(pre); box.appendChild(b);
+    d.querySelector(".corpo").insertBefore(box, ul);
+  });
   if (p.video) {
     const v = document.createElement("a");
     v.className = "video"; v.href = p.video; v.target = "_blank"; v.rel = "noopener";
     v.textContent = "▶ Ver o vídeo";
     d.querySelector(".corpo").appendChild(v);
   }
-  p.texto = tira([p.titulo, p.resumo, p.prompt || "", "prato " + p.num, TIPOS[p.tipo] || "", ...p.links.map(l => l.join(" "))].join(" "));
+  p.texto = tira([p.titulo, p.resumo, p.prompt || "", ...(p.prompts || []).map(x => x.join(" ")), "prato " + p.num, TIPOS[p.tipo] || "", ...p.links.map(l => l.join(" "))].join(" "));
   p.el = d;
   el.appendChild(d);
 });
